@@ -6,6 +6,7 @@ plugins {
 
 allprojects {
     group = "com.github.wakingrufus"
+    version = "0.0.1-alpha"
 }
 
 tasks.getByName<Wrapper>("wrapper") {
