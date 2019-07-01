@@ -15,8 +15,7 @@ import java.time.temporal.ChronoUnit
 
 @BigTestDsl
 class KtorHttpAgent<S, R>(val client: () -> HttpClient,
-                          val url: (S) -> String,
-                          val httpMethod: HttpMethod = HttpMethod.Get) {
+                          val url: (S) -> String) {
     companion object : KLogging()
 
     var httpAgent: HttpAgentDsl<S, R> = HttpAgentDsl({ "" })
@@ -36,7 +35,7 @@ class KtorHttpAgent<S, R>(val client: () -> HttpClient,
             call.body?.also {
                 body = it
             }
-            method = httpMethod
+            method = call.method.toKtor()
         }
     }
 
@@ -64,4 +63,11 @@ class KtorHttpAgent<S, R>(val client: () -> HttpClient,
     suspend inline operator fun <reified R> invoke(session: S): Result<R> {
         return parseResponse(perform(session))
     }
+}
+
+fun com.github.wakingrufus.kalibrate.agent.HttpMethod.toKtor(): HttpMethod = when (this) {
+    com.github.wakingrufus.kalibrate.agent.HttpMethod.GET -> HttpMethod.Get
+    com.github.wakingrufus.kalibrate.agent.HttpMethod.POST -> HttpMethod.Post
+    com.github.wakingrufus.kalibrate.agent.HttpMethod.DELETE -> HttpMethod.Delete
+    com.github.wakingrufus.kalibrate.agent.HttpMethod.PUT -> HttpMethod.Put
 }

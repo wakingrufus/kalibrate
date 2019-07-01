@@ -12,6 +12,11 @@ class HttpAgentDsl<S, R>(val url: (S) -> String) {
         this.body = body
     }
 
+    var method = HttpMethod.GET
+    fun method(method: HttpMethod) {
+        this.method = method
+    }
+
     var headers: MutableList<(S) -> Pair<String, String>> = mutableListOf()
 
     fun header(sessionHeader: (S) -> Pair<String, String>) {
@@ -19,6 +24,6 @@ class HttpAgentDsl<S, R>(val url: (S) -> String) {
     }
 
     fun toCall(session: S): HttpAgentCall<S, R> {
-        return HttpAgentCall(url(session), this@HttpAgentDsl.body?.invoke(session), headers.map { it(session) }.toList())
+        return HttpAgentCall(method, url(session), this@HttpAgentDsl.body?.invoke(session), headers.map { it(session) }.toList())
     }
 }

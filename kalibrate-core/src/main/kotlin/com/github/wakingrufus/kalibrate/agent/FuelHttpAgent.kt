@@ -10,8 +10,7 @@ import java.time.Duration
 
 @BigTestDsl
 class FuelHttpAgent<S, R>(val mapper: () -> ObjectMapper,
-                          val url: (S) -> String,
-                          val httpMethod: Method = Method.GET) {
+                          val url: (S) -> String) {
     companion object : KLogging()
 
     var httpAgent: HttpAgentDsl<S, R> = HttpAgentDsl({ "" })
@@ -24,7 +23,7 @@ class FuelHttpAgent<S, R>(val mapper: () -> ObjectMapper,
         httpAgent.toCall(session).let { call ->
             val urlString = call.url
             logger.debug { "invoking fuel agent: url=$urlString" }
-            return Fuel.request(httpMethod, urlString)
+            return Fuel.request(call.method.toFuel(), urlString)
                     .apply {
                         call.headers.forEach {
                             header(it.first, it.second)
@@ -47,4 +46,11 @@ class FuelHttpAgent<S, R>(val mapper: () -> ObjectMapper,
         }
 
     }
+}
+
+fun HttpMethod.toFuel(): Method = when (this) {
+    HttpMethod.GET -> Method.GET
+    HttpMethod.POST -> Method.POST
+    HttpMethod.DELETE -> Method.DELETE
+    HttpMethod.PUT -> Method.PUT
 }

@@ -1,7 +1,6 @@
 package com.github.wakingrufus.kalibrate
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.github.kittinunf.fuel.core.Method
 import com.github.wakingrufus.kalibrate.agent.FuelHttpAgent
 import com.github.wakingrufus.kalibrate.agent.HttpAgentDsl
 import com.github.wakingrufus.kalibrate.agent.KtorHttpAgent
@@ -12,7 +11,6 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.features.json.JacksonSerializer
 import io.ktor.client.features.json.JsonFeature
-import io.ktor.http.HttpMethod
 import io.ktor.util.KtorExperimentalAPI
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.flowOf
@@ -40,9 +38,8 @@ class KalibrateDslBuilder<T>(val sessionBuilder: (ArgParser) -> T) {
     }
 
     fun <R> fuelAgent(url: (T) -> String,
-                      httpMethod: Method = Method.GET,
                       config: HttpAgentDsl<T, R>.() -> Unit = {}): FuelHttpAgent<T, R> {
-        return FuelHttpAgent<T, R>({ ObjectMapper().apply(objectMapperConfig) }, url, httpMethod)
+        return FuelHttpAgent<T, R>({ ObjectMapper().apply(objectMapperConfig) }, url)
                 .apply {
                     config {
                         apply(globalHttpConfig)
@@ -52,9 +49,8 @@ class KalibrateDslBuilder<T>(val sessionBuilder: (ArgParser) -> T) {
     }
 
     fun <R> httpAgent(url: (T) -> String,
-                      httpMethod: HttpMethod = HttpMethod.Get,
                       config: HttpAgentDsl<T, R>.() -> Unit = {}): KtorHttpAgent<T, R> {
-        return KtorHttpAgent<T, R>(client = { client!! }, url = url, httpMethod = httpMethod)
+        return KtorHttpAgent<T, R>(client = { client!! }, url = url)
                 .apply {
                     config {
                         apply(globalHttpConfig)
