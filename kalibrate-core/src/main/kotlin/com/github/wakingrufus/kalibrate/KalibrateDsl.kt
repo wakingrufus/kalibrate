@@ -102,7 +102,7 @@ class KalibrateDslBuilder<T>(val sessionBuilder: (ArgParser) -> T) {
 
 @KtorExperimentalAPI
 @FlowPreview
-fun <T> bigTest(args: Array<out String>, sessionBuilder: (ArgParser) -> T, config: KalibrateDslBuilder<T>.() -> Unit) = mainBody {
+fun <T> kalibrate(args: Array<out String>, sessionBuilder: (ArgParser) -> T, config: KalibrateDslBuilder<T>.() -> Unit) = mainBody {
     KalibrateDslBuilder(sessionBuilder).apply(config).invoke(args)
 }
 
