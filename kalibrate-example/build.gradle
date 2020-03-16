@@ -1,0 +1,34 @@
+plugins {
+    id "org.jetbrains.kotlin.jvm" version "1.3.40"
+    id 'application'
+}
+
+run {
+    // Need to split the space-delimited value in the exec.args
+    args((System.getProperty("args") ?: "").split())
+}
+mainClassName = 'com.github.wakingrufus.kalibrate.example.MainKt'
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    api group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+    api 'com.google.code.findbugs:findbugs-annotations:3.0.1'
+
+    compile(project(":kalibrate-core"))
+
+    implementation group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.25'
+
+    implementation 'io.github.microutils:kotlin-logging:1.6.22'
+
+  //  testImplementation("ch.qos.logback:logback-classic:1.1.11")
+    testCompile(group:'junit', name:'junit', version: '4.12')
+    testCompile 'org.jetbrains.kotlin:kotlin-test'
+    testCompile("joda-time:joda-time:2.8.2")
+    testCompile "com.github.tomakehurst:wiremock:2.19.0"
+    testCompile "org.assertj:assertj-core:3.11.1"
+    testCompile "com.github.tomakehurst:wiremock:2.19.0"
+}

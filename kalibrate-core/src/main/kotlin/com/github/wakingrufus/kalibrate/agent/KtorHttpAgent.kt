@@ -9,8 +9,10 @@ import io.ktor.client.response.HttpResponse
 import io.ktor.client.response.readText
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.runBlocking
 import mu.KLogging
 import java.time.Duration
+import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 @BigTestDsl
@@ -24,11 +26,11 @@ class KtorHttpAgent<S, R>(val client: () -> HttpClient,
         httpAgent = HttpAgentDsl<S, R>(url).apply(config)
     }
 
-    suspend fun perform(session: S): HttpResponse {
+    fun perform(session: S): HttpResponse {
         val call = httpAgent.toCall(session)
         val urlString = url(session)
         logger.debug { "invoking http agent: url=$urlString" }
-        return client().request(urlString) {
+        return runBlocking { client().request<HttpResponse>(urlString) {
             call.headers.forEach {
                 header(it.first, it.second)
             }
@@ -36,32 +38,34 @@ class KtorHttpAgent<S, R>(val client: () -> HttpClient,
                 body = it
             }
             method = call.method.toKtor()
-        }
+        } }
     }
 
-    suspend inline fun <reified R> parseResponse(httpResponse: HttpResponse): Result<R> {
+    inline fun <reified R> parseResponse(timestamp: Instant, httpResponse: HttpResponse): Result<R> {
         val duration = Duration.of(httpResponse.responseTime.timestamp.minus(httpResponse.requestTime.timestamp), ChronoUnit.MILLIS)
-        return when (httpResponse.status) {
-            HttpStatusCode.OK -> {
-                var respObj: R?
-                try {
-                    respObj = httpResponse.receive()
-                    respObj?.let {
-                        logger.debug { "success response: $respObj" }
-                        Success<R>(duration, it)
-                    } ?: Failure<R>("Failure to deserialize " + httpResponse.readText())
-                } catch (e: Throwable) {
-                    val responseString = httpResponse.readText()
-                    logger.debug { "fail exception=${e.localizedMessage} status=${httpResponse.status} response=$responseString" }
-                    Failure<R>("Failure to deserialize ${e.localizedMessage}")
+        return runBlocking {
+            when (httpResponse.status) {
+                HttpStatusCode.OK -> {
+                    var respObj: R?
+                    try {
+                        respObj = httpResponse.receive()
+                        respObj?.let {
+                            logger.debug { "success response: $respObj" }
+                            Success<R>(timestamp, duration, it)
+                        } ?: Failure<R>(timestamp, "Failure to deserialize " + httpResponse.readText())
+                    } catch (e: Throwable) {
+                        val responseString = httpResponse.readText()
+                        logger.debug { "fail exception=${e.localizedMessage} status=${httpResponse.status} response=$responseString" }
+                        Failure<R>(timestamp, "Failure to deserialize ${e.localizedMessage}")
+                    }
                 }
+                else -> Failure<R>(timestamp, httpResponse.readText())
             }
-            else -> Failure<R>(httpResponse.readText())
         }
     }
 
-    suspend inline operator fun <reified R> invoke(session: S): Result<R> {
-        return parseResponse(perform(session))
+    inline operator fun <reified R> invoke(session: S): Result<R> {
+        return parseResponse(Instant.now(), perform(session))
     }
 }
 

@@ -7,6 +7,7 @@ import com.github.kittinunf.result.map
 import com.github.wakingrufus.kalibrate.BigTestDsl
 import mu.KLogging
 import java.time.Duration
+import java.time.Instant
 
 @BigTestDsl
 class FuelHttpAgent<S, R>(val mapper: () -> ObjectMapper,
@@ -19,10 +20,11 @@ class FuelHttpAgent<S, R>(val mapper: () -> ObjectMapper,
         httpAgent = HttpAgentDsl<S, R>(url).apply(config)
     }
 
-    suspend inline operator fun <reified R> invoke(session: S): Result<R> {
+    inline operator fun <reified R> invoke(session: S): Result<R> {
         httpAgent.toCall(session).let { call ->
             val urlString = call.url
             logger.debug { "invoking fuel agent: url=$urlString" }
+            val timestamp = Instant.now()
             return Fuel.request(call.method.toFuel(), urlString)
                     .apply {
                         call.headers.forEach {
@@ -36,9 +38,9 @@ class FuelHttpAgent<S, R>(val mapper: () -> ObjectMapper,
                     .response().let { triple ->
                         triple.third.map { triple.second }
                     }.fold(
-                            { data -> Success<R>(Duration.ZERO, mapper().readValue(data.data, R::class.java)) },
+                            { data -> Success<R>(timestamp, Duration.between(timestamp, Instant.now()), mapper().readValue(data.data, R::class.java)) },
                             { error ->
-                                Failure<R>("request $call failed: $error").also {
+                                Failure<R>(timestamp, "request $call failed: $error").also {
                                     logger.debug { "Request $call Failed: $error" }
                                 }
                             }

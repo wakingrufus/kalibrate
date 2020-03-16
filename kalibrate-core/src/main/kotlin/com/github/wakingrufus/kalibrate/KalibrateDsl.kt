@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.wakingrufus.kalibrate.agent.FuelHttpAgent
 import com.github.wakingrufus.kalibrate.agent.HttpAgentDsl
 import com.github.wakingrufus.kalibrate.agent.KtorHttpAgent
+import com.github.wakingrufus.kalibrate.agent.ReactorHttpAgent
 import com.github.wakingrufus.kalibrate.scenario.Scenario
 import com.xenomachina.argparser.ArgParser
 import com.xenomachina.argparser.mainBody
@@ -17,17 +18,22 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import mu.KLogging
+import java.time.Duration
 
-class KalibrateDslBuilder<T>(val sessionBuilder: (ArgParser) -> T) {
+class KalibrateDslBuilder<T>(var sessionBuilder: (ArgParser) -> T) {
     companion object : KLogging()
 
     val scenarioMap: MutableMap<String, Scenario<T>> = mutableMapOf()
     var globalHttpConfig: HttpAgentDsl<T, *>.() -> Unit = { }
     var scenarioChooser: (T) -> String = { scenarioMap.keys.first() }
     var objectMapperConfig: ObjectMapper.() -> Unit = {
-
     }
+
     var client: HttpClient? = null
+
+    fun sessionArgs(config: (ArgParser) -> T) {
+        sessionBuilder = config
+    }
 
     fun jackson(objectMapperConfig: ObjectMapper.() -> Unit) {
         this.objectMapperConfig = objectMapperConfig
@@ -51,6 +57,17 @@ class KalibrateDslBuilder<T>(val sessionBuilder: (ArgParser) -> T) {
     fun <R> httpAgent(url: (T) -> String,
                       config: HttpAgentDsl<T, R>.() -> Unit = {}): KtorHttpAgent<T, R> {
         return KtorHttpAgent<T, R>(client = { client!! }, url = url)
+                .apply {
+                    config {
+                        apply(globalHttpConfig)
+                        apply(config)
+                    }
+                }
+    }
+
+    fun <R> reactorAgent(url: (T) -> String,
+                         config: HttpAgentDsl<T, R>.() -> Unit = {}): ReactorHttpAgent<T, R> {
+        return ReactorHttpAgent<T, R>({ ObjectMapper().apply(objectMapperConfig) }, url)
                 .apply {
                     config {
                         apply(globalHttpConfig)
@@ -87,11 +104,12 @@ class KalibrateDslBuilder<T>(val sessionBuilder: (ArgParser) -> T) {
                 }
             }
         }
-        val argParser = ArgParser(args)
-        val session = argParser.parseInto(sessionBuilder)
+
+        val session = sessionBuilder(ArgParser(args))
         val results = scenarioMap[scenarioChooser(session)]?.invoke(session) ?: flowOf()
         results.toList()
-                .apply { logger.info { "requests completed: ${this.size}" } }
+                .also { logger.info { "requests completed: ${it.size}" } }
+                .also { logger.info { "req/sec = ${it.size / Duration.between(it.map { it.timestamp }.min(), it.map { it.timestamp }.max()).seconds}" } }
                 .forEach { logger.debug(it.toString()) }
     }
 }
@@ -99,7 +117,7 @@ class KalibrateDslBuilder<T>(val sessionBuilder: (ArgParser) -> T) {
 @KtorExperimentalAPI
 @FlowPreview
 fun <T> kalibrate(args: Array<out String>, sessionBuilder: (ArgParser) -> T, config: KalibrateDslBuilder<T>.() -> Unit) = mainBody {
-    KalibrateDslBuilder(sessionBuilder).apply(config).invoke(args)
+    KalibrateDslBuilder<T>(sessionBuilder).apply(config).invoke(args)
 }
 
 @DslMarker

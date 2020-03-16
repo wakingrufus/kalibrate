@@ -1,29 +1,35 @@
 package com.github.wakingrufus.kalibrate.scenario
 
 import com.github.wakingrufus.kalibrate.BigTestDsl
-import com.github.wakingrufus.kalibrate.agent.Failure
 import com.github.wakingrufus.kalibrate.agent.Result
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flow
+import mu.KLogging
 import java.time.Duration
 import java.time.Instant
 
 @BigTestDsl
 @FlowPreview
 class Simulation<T> {
-    private val singletonWorkPattern: (session: T) -> Flow<Result<*>> = {
-        flow {
-            val setupResults = runSetup(it)
-            emit(setupResults.second.asFlow())
-            val repeatedResults = runRepeatable(setupResults.first)
-            emit(repeatedResults.asFlow())
-        }.flattenConcat()
+    companion object : KLogging()
+
+    private val singletonWorkPattern: suspend (session: T) -> Flow<Result<*>> = {
+        coroutineScope {
+            flow {
+                val setupResults = runSetup(it)
+                emit(setupResults.second.asFlow())
+                val repeatedResults = runRepeatable(setupResults.first)
+                emit(repeatedResults.asFlow())
+            }.flattenConcat()
+        }
     }
-    private var workPattern: (session: T) -> Flow<Result<*>> = singletonWorkPattern
+    private var workPattern: suspend (session: T) -> Flow<Result<*>> = singletonWorkPattern
     private var setup = StepContainer<T>()
     private var repeatable = StepContainer<T>()
 
@@ -33,22 +39,25 @@ class Simulation<T> {
 
     fun load(duration: Duration, users: Int) {
         workPattern = {
-            flow {
-
+            coroutineScope {
                 val setupResults = runSetup(it)
-                emit(setupResults.second.asFlow())
-                if(setupResults.second.filterIsInstance<Failure<T>>().isEmpty()) {
-                    val start = Instant.now()
-                    (0..duration.seconds).toList().forEach {
-                        delay(start.plusMillis(it).minusMillis(Instant.now().toEpochMilli()).toEpochMilli())
-                        (1..users).toList().map {
-                            emit(runRepeatable(setupResults.first).asFlow())
+                val start = Instant.now().plusSeconds(2)
+                val results = (1..users).toList().map { userId ->
+                    async {
+                        (0 until duration.seconds).toList().flatMap { tick ->
+                            delay(start.plusSeconds(tick).toEpochMilli() - Instant.now().toEpochMilli())
+                            runRepeatable(setupResults.first)
                         }
                     }
-                }
-            }.flattenConcat()
+                }.map { it.await() }
+                flow {
+                    emit(setupResults.second.asFlow())
+                    results.forEach { emit(it.asFlow()) }
+                }.flattenConcat()
+            }
         }
     }
+
 
     fun stress(acceleration: Int) {
         //    workPattern = { env, token -> sim(env, token) }
@@ -62,7 +71,7 @@ class Simulation<T> {
         repeatable = StepContainer<T>().apply(work)
     }
 
-    operator fun invoke(session: T): Flow<Result<*>> {
+    suspend operator fun invoke(session: T): Flow<Result<*>> {
         return workPattern(session)
     }
 
@@ -79,7 +88,7 @@ class Simulation<T> {
 class StepContainer<S> {
     val steps: MutableList<Step<S, *>> = mutableListOf()
 
-    fun <R> step(agent: suspend (S) -> Result<R>, config: Step<S, R>.() -> Unit = {}) {
+    fun <R> step(agent: (S) -> Result<R>, config: Step<S, R>.() -> Unit = {}) {
         steps.add(Step(agent).apply(config))
     }
 
@@ -91,4 +100,3 @@ class StepContainer<S> {
         }
     }
 }
-

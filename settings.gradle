@@ -1,4 +1,5 @@
 rootProject.name = 'kalibrate'
 
 include 'kalibrate-core'
+include 'kalibrate-example'
 
