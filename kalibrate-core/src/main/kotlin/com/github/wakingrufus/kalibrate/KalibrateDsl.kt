@@ -9,7 +9,7 @@ import com.github.wakingrufus.kalibrate.scenario.Scenario
 import com.xenomachina.argparser.ArgParser
 import com.xenomachina.argparser.mainBody
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
+import io.ktor.client.engine.cio.*
 import io.ktor.client.features.json.JacksonSerializer
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.util.KtorExperimentalAPI
@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import mu.KLogging
 import java.time.Duration
+import java.time.Instant
 
 class KalibrateDslBuilder<T>(var sessionBuilder: (ArgParser) -> T) {
     companion object : KLogging()
@@ -91,7 +92,7 @@ class KalibrateDslBuilder<T>(var sessionBuilder: (ArgParser) -> T) {
     operator fun invoke(args: Array<out String>) = runBlocking {
         client = HttpClient(CIO) {
             install(JsonFeature) {
-                serializer = JacksonSerializer(objectMapperConfig)
+                serializer = JacksonSerializer(block = objectMapperConfig)
             }
             engine {
                 maxConnectionsCount = 1000 // Maximum number of socket connections.
@@ -106,10 +107,14 @@ class KalibrateDslBuilder<T>(var sessionBuilder: (ArgParser) -> T) {
         }
 
         val session = sessionBuilder(ArgParser(args))
+        val start = Instant.now()
         val results = scenarioMap[scenarioChooser(session)]?.invoke(session) ?: flowOf()
         results.toList()
                 .also { logger.info { "requests completed: ${it.size}" } }
-                .also { logger.info { "req/sec = ${it.size / Duration.between(it.map { it.timestamp }.min(), it.map { it.timestamp }.max()).seconds}" } }
+                .also { logger.info { "req/sec = ${it.size / Duration.between(
+                    it.map { it.timestamp }.minOrNull() ?: start,
+                    it.map { it.timestamp }.maxOrNull() ?: Instant.now()).seconds}" }
+                }
                 .forEach { logger.debug(it.toString()) }
     }
 }

@@ -1,23 +1,22 @@
 package com.github.wakingrufus.kalibrate.agent
 
 import com.github.wakingrufus.kalibrate.BigTestDsl
-import io.ktor.client.HttpClient
-import io.ktor.client.call.receive
-import io.ktor.client.request.header
-import io.ktor.client.request.request
-import io.ktor.client.response.HttpResponse
-import io.ktor.client.response.readText
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
-import kotlinx.coroutines.runBlocking
 import mu.KLogging
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 @BigTestDsl
-class KtorHttpAgent<S, R>(val client: () -> HttpClient,
-                          val url: (S) -> String) {
+class KtorHttpAgent<S, R>(
+    val client: () -> HttpClient,
+    val url: (S) -> String
+) {
     companion object : KLogging()
 
     var httpAgent: HttpAgentDsl<S, R> = HttpAgentDsl({ "" })
@@ -26,11 +25,11 @@ class KtorHttpAgent<S, R>(val client: () -> HttpClient,
         httpAgent = HttpAgentDsl<S, R>(url).apply(config)
     }
 
-    fun perform(session: S): HttpResponse {
+    suspend fun perform(session: S): HttpStatement {
         val call = httpAgent.toCall(session)
         val urlString = url(session)
-        logger.debug { "invoking http agent: url=$urlString" }
-        return runBlocking { client().request<HttpResponse>(urlString) {
+        logger.info { "invoking http agent: url=$urlString" }
+        return client().request<HttpStatement>(urlString) {
             call.headers.forEach {
                 header(it.first, it.second)
             }
@@ -38,34 +37,38 @@ class KtorHttpAgent<S, R>(val client: () -> HttpClient,
                 body = it
             }
             method = call.method.toKtor()
-        } }
+        }
     }
 
-    inline fun <reified R> parseResponse(timestamp: Instant, httpResponse: HttpResponse): Result<R> {
-        val duration = Duration.of(httpResponse.responseTime.timestamp.minus(httpResponse.requestTime.timestamp), ChronoUnit.MILLIS)
-        return runBlocking {
+    suspend inline fun <reified R> parseResponse(statement: HttpStatement): Result<R> {
+        return statement.receive<HttpResponse, Result<R>> { httpResponse ->
+            val duration = Duration.of(
+                httpResponse.responseTime.timestamp.minus(httpResponse.requestTime.timestamp),
+                ChronoUnit.MILLIS
+            )
+            val startTime = Instant.ofEpochMilli(httpResponse.requestTime.timestamp)
             when (httpResponse.status) {
                 HttpStatusCode.OK -> {
-                    var respObj: R?
+                    val respObj: R?
                     try {
                         respObj = httpResponse.receive()
                         respObj?.let {
                             logger.debug { "success response: $respObj" }
-                            Success<R>(timestamp, duration, it)
-                        } ?: Failure<R>(timestamp, "Failure to deserialize " + httpResponse.readText())
+                            Success<R>(startTime, duration, it)
+                        } ?: Failure<R>(startTime, "Failure to deserialize " + httpResponse.readText())
                     } catch (e: Throwable) {
                         val responseString = httpResponse.readText()
                         logger.debug { "fail exception=${e.localizedMessage} status=${httpResponse.status} response=$responseString" }
-                        Failure<R>(timestamp, "Failure to deserialize ${e.localizedMessage}")
+                        Failure<R>(startTime, "Failure to deserialize ${e.localizedMessage}")
                     }
                 }
-                else -> Failure<R>(timestamp, httpResponse.readText())
+                else -> Failure<R>(startTime, httpResponse.readText())
             }
         }
     }
 
-    inline operator fun <reified R> invoke(session: S): Result<R> {
-        return parseResponse(Instant.now(), perform(session))
+    suspend inline operator fun <reified R> invoke(session: S): Result<R> {
+        return parseResponse(perform(session))
     }
 }
 

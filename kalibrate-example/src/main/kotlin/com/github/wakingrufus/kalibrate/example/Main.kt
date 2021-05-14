@@ -24,7 +24,7 @@ fun main(args: Array<String>) = kalibrate(args, { Session() }) {
     }
     scenarioChooser { it.scenario }
 
-    val get = fuelAgent<GetResponse>(url = { "https://httpbin.org/get?test=${it.test}" })
+    val get = httpAgent<GetResponse>(url = { "https://httpbin.org/get?test=${it.test}" })
 
     scenario("deploy") {
         simulation {
