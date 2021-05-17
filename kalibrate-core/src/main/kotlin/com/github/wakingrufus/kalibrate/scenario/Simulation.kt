@@ -4,7 +4,7 @@ import com.github.wakingrufus.kalibrate.KalibrateDsl
 import com.github.wakingrufus.kalibrate.agent.KtorHttpAgent
 import com.github.wakingrufus.kalibrate.agent.Result
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.*
 import mu.KLogging
 import java.time.Duration
 

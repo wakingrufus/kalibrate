@@ -17,16 +17,15 @@ class LoadWorkPattern<T>(val duration: Duration, val users: Int) : WorkPattern<T
             val setupResults = setup(initialSession)
             flow {
                 emit(setupResults.second.asFlow())
-                emit((1..users).asFlow().flatMapMerge(concurrency = 1000) { userId ->
+                emit((1..users).asFlow().flatMapMerge(concurrency = 10_000) { userId ->
                     (0 until duration.seconds).asFlow().map { tick ->
                         kotlinx.coroutines.delay(
                             start.plusSeconds(tick).toEpochMilli() - Instant.now().toEpochMilli()
                         )
-                        logger.debug { "running tick={$tick} for user={$userId}" }
                         work(initialSession).asFlow()
-                    }.flattenMerge(1000)
+                    }.flattenMerge(100)
                 })
-            }.flattenMerge(1000)
+            }.flattenMerge(1_000)
         }
     }
 }

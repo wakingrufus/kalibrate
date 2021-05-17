@@ -43,7 +43,7 @@ class Scenario<T> {
     }
 
     operator fun invoke(session: T): Flow<Result<*>> =
-        flow { simulations.map { emit(it.invoke(session)) } }.flattenMerge(1000)
+        flow { simulations.map { emit(it.invoke(session)) } }.flattenMerge(10_000)
 
 }
 

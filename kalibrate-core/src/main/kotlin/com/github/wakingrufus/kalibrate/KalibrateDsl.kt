@@ -77,10 +77,10 @@ class KalibrateDslBuilder<T>(var sessionBuilder: (ArgParser) -> T) {
                 serializer = JacksonSerializer(block = objectMapperConfig)
             }
             engine {
-                maxConnectionsCount = 1000 // Maximum number of socket connections.
+                maxConnectionsCount = 10000 // Maximum number of socket connections.
                 endpoint.apply {
-                    maxConnectionsPerRoute = 100 // Maximum number of requests for a specific endpoint route.
-                    pipelineMaxSize = 20 // Max number of opened endpoints.
+                    maxConnectionsPerRoute = 1000 // Maximum number of requests for a specific endpoint route.
+                    pipelineMaxSize = 100 // Max number of opened endpoints.
                     keepAliveTime = 5000 // Max number of milliseconds to keep each connection alive.
                     connectTimeout = 5000 // Number of milliseconds to wait trying to connect to the server.
                     connectAttempts = 5 // Maximum number of attempts for retrying a connection.
