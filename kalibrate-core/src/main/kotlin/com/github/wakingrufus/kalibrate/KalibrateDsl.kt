@@ -6,11 +6,10 @@ import com.github.wakingrufus.kalibrate.agent.KtorHttpAgent
 import com.github.wakingrufus.kalibrate.scenario.Scenario
 import com.xenomachina.argparser.ArgParser
 import com.xenomachina.argparser.mainBody
-import io.ktor.client.HttpClient
+import io.ktor.client.*
 import io.ktor.client.engine.cio.*
-import io.ktor.client.features.json.JacksonSerializer
-import io.ktor.client.features.json.JsonFeature
-import io.ktor.util.KtorExperimentalAPI
+import io.ktor.client.features.json.*
+import io.ktor.util.*
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
@@ -42,15 +41,17 @@ class KalibrateDslBuilder<T>(var sessionBuilder: (ArgParser) -> T) {
         scenarioChooser = fn
     }
 
-    fun <R> httpAgent(url: (T) -> String,
-                      config: HttpAgentDsl<T, R>.() -> Unit = {}): KtorHttpAgent<T, R> {
+    fun <R> httpAgent(
+        url: (T) -> String,
+        config: HttpAgentDsl<T, R>.() -> Unit = {}
+    ): KtorHttpAgent<T, R> {
         return KtorHttpAgent<T, R>(client = { client!! }, url = url)
-                .apply {
-                    config {
-                        apply(globalHttpConfig)
-                        apply(config)
-                    }
+            .apply {
+                config {
+                    apply(globalHttpConfig)
+                    apply(config)
                 }
+            }
     }
 
     fun globalHttpConfig(config: HttpAgentDsl<T, *>.() -> Unit) {
@@ -59,8 +60,8 @@ class KalibrateDslBuilder<T>(var sessionBuilder: (ArgParser) -> T) {
 
     fun scenario(name: String, setup: Scenario<T>.() -> Unit): Scenario<T> {
         return Scenario<T>()
-                .apply(setup)
-                .also { scenarioMap.put(name, it) }
+            .apply(setup)
+            .also { scenarioMap.put(name, it) }
     }
 
     @KtorExperimentalAPI
@@ -89,13 +90,14 @@ class KalibrateDslBuilder<T>(var sessionBuilder: (ArgParser) -> T) {
             results.toList()
                 .also { logger.info { "requests completed: ${it.size}" } }
                 .also {
-                    logger.info {
-                        "req/sec = ${
-                            it.size / Duration.between(
-                                it.map { it.timestamp }.minOrNull() ?: start,
-                                it.map { it.timestamp }.maxOrNull() ?: Instant.now()
-                            ).seconds
-                        }"
+                    val durationSeconds = Duration.between(
+                        it.map { it.timestamp }.minOrNull() ?: start,
+                        it.map { it.timestamp }.maxOrNull() ?: Instant.now()
+                    ).seconds
+                    if (durationSeconds > 0) {
+                        logger.info {
+                            "req/sec = ${it.size / durationSeconds}"
+                        }
                     }
                 }
                 .forEach { logger.debug(it.toString()) }
@@ -105,7 +107,11 @@ class KalibrateDslBuilder<T>(var sessionBuilder: (ArgParser) -> T) {
 
 @KtorExperimentalAPI
 @FlowPreview
-fun <T> kalibrate(args: Array<out String>, sessionBuilder: (ArgParser) -> T, config: KalibrateDslBuilder<T>.() -> Unit) = mainBody {
+fun <T> kalibrate(
+    args: Array<out String>,
+    sessionBuilder: (ArgParser) -> T,
+    config: KalibrateDslBuilder<T>.() -> Unit
+) = mainBody {
     KalibrateDslBuilder<T>(sessionBuilder).apply(config).invoke(args)
 }
 

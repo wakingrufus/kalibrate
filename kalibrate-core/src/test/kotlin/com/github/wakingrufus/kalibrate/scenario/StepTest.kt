@@ -1,10 +1,9 @@
-package com.grubhub.bigtestkotlin.scenario
+package com.github.wakingrufus.kalibrate.scenario
 
 import com.github.wakingrufus.kalibrate.agent.Success
-import com.github.wakingrufus.kalibrate.scenario.Step
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import java.time.Duration
 import java.time.Instant
 

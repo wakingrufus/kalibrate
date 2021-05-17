@@ -27,14 +27,20 @@ dependencies {
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core")
     implementation("io.ktor:ktor-client-cio:1.5.4")
 
-    testImplementation("junit:junit:4.13.1")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.+")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.+")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation ("com.github.tomakehurst:wiremock:2.19.0")
     testImplementation ("org.assertj:assertj-core:3.11.1")
     testImplementation("org.slf4j:slf4j-log4j12:1.7.25")
+    testImplementation("org.mock-server:mockserver-netty:5.11.1")
 }
 val compileKotlin: KotlinCompile by tasks
 
 compileKotlin.kotlinOptions {
     languageVersion = "1.4"
+}
+
+val testTask = tasks.getByName<Test>("test") {
+    useJUnitPlatform()
 }

@@ -16,7 +16,8 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import mu.KLogging
 import org.assertj.core.api.Assertions
-import org.junit.Test
+import org.junit.jupiter.api.Test
+
 import java.time.Instant
 
 internal class SimulationTest {
@@ -43,13 +44,13 @@ internal class SimulationTest {
         val get = KtorHttpAgent<String, String>(client = { client }, url = { "https://httpbin.org/get?test=${it}" })
         val sim = Simulation<String>().apply {
             repeat {
-                    step<String>(get::invoke)
-                    step<String>(get::invoke)
+                step<String>(get::invoke)
+                step<String>(get::invoke)
             }
         }
         runBlocking {
-            val result = sim("test")
-            Assertions.assertThat(result.toList(mutableListOf())).hasSize(2)
+            val result = sim("test").toList()
+            Assertions.assertThat(result).hasSize(2)
         }
     }
 
@@ -76,7 +77,7 @@ internal class SimulationTest {
             (1..500).forEach { fnum ->
                 emit(flow {
                     (1..3).forEach {
-                        val delay =  (baseStart + (it * 1000)) - Instant.now().toEpochMilli()
+                        val delay = (baseStart + (it * 1000)) - Instant.now().toEpochMilli()
                         if (delay > 0) {
                             delay(delay)
                         }

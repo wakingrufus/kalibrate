@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.flow
 class Scenario<T> {
     private val simulations: MutableList<Simulation<T>> = mutableListOf()
 
-    fun once(vararg agents: suspend (T) -> Result<Any>): Simulation<T> {
+    fun once(vararg agents: (T) -> Result<Any>): Simulation<T> {
         return Simulation<T>()
             .apply {
                 setup {
@@ -24,7 +24,7 @@ class Scenario<T> {
             .also { simulations.add(it) }
     }
 
-    fun repeat(vararg agents: suspend (T) -> Result<Any>): Simulation<T> {
+    fun repeat(vararg agents: (T) -> Result<Any>): Simulation<T> {
         return Simulation<T>()
             .apply {
                 repeat {

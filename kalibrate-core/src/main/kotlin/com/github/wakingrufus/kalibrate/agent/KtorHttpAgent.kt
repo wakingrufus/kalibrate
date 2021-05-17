@@ -7,6 +7,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.http.HttpMethod
+import kotlinx.coroutines.runBlocking
 import mu.KLogging
 import java.time.Duration
 import java.time.Instant
@@ -55,10 +56,9 @@ class KtorHttpAgent<S, R>(
                         respObj?.let {
                             logger.debug { "success response: $respObj" }
                             Success<R>(startTime, duration, it)
-                        } ?: Failure<R>(startTime, "Failure to deserialize " + httpResponse.readText())
+                        } ?: Failure<R>(startTime, "Failure to deserialize")
                     } catch (e: Throwable) {
-                        val responseString = httpResponse.readText()
-                        logger.debug { "fail exception=${e.localizedMessage} status=${httpResponse.status} response=$responseString" }
+                        logger.debug { "fail exception=${e.localizedMessage} status=${httpResponse.status}" }
                         Failure<R>(startTime, "Failure to deserialize ${e.localizedMessage}")
                     }
                 }
@@ -67,8 +67,8 @@ class KtorHttpAgent<S, R>(
         }
     }
 
-    suspend inline operator fun <reified R> invoke(session: S): Result<R> {
-        return parseResponse(perform(session))
+    inline operator fun <reified R> invoke(session: S): Result<R> {
+        return runBlocking { parseResponse(perform(session)) }
     }
 }
 

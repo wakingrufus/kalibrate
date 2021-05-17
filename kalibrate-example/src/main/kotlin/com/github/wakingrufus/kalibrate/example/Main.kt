@@ -45,7 +45,7 @@ fun main(args: Array<String>) = kalibrate(args, { Session() }) {
     }
     scenario("load") {
         simulation {
-            load(Duration.of(4, ChronoUnit.SECONDS), 20)
+            load(Duration.of(4, ChronoUnit.SECONDS), 400)
             setup {
                 step<GetResponse>(get::invoke) {
                     sessionChange { session, result ->
