@@ -1,10 +1,8 @@
 package com.github.wakingrufus.kalibrate
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.github.wakingrufus.kalibrate.agent.FuelHttpAgent
 import com.github.wakingrufus.kalibrate.agent.HttpAgentDsl
 import com.github.wakingrufus.kalibrate.agent.KtorHttpAgent
-import com.github.wakingrufus.kalibrate.agent.ReactorHttpAgent
 import com.github.wakingrufus.kalibrate.scenario.Scenario
 import com.xenomachina.argparser.ArgParser
 import com.xenomachina.argparser.mainBody
@@ -44,31 +42,9 @@ class KalibrateDslBuilder<T>(var sessionBuilder: (ArgParser) -> T) {
         scenarioChooser = fn
     }
 
-    fun <R> fuelAgent(url: (T) -> String,
-                      config: HttpAgentDsl<T, R>.() -> Unit = {}): FuelHttpAgent<T, R> {
-        return FuelHttpAgent<T, R>({ ObjectMapper().apply(objectMapperConfig) }, url)
-                .apply {
-                    config {
-                        apply(globalHttpConfig)
-                        apply(config)
-                    }
-                }
-    }
-
     fun <R> httpAgent(url: (T) -> String,
                       config: HttpAgentDsl<T, R>.() -> Unit = {}): KtorHttpAgent<T, R> {
         return KtorHttpAgent<T, R>(client = { client!! }, url = url)
-                .apply {
-                    config {
-                        apply(globalHttpConfig)
-                        apply(config)
-                    }
-                }
-    }
-
-    fun <R> reactorAgent(url: (T) -> String,
-                         config: HttpAgentDsl<T, R>.() -> Unit = {}): ReactorHttpAgent<T, R> {
-        return ReactorHttpAgent<T, R>({ ObjectMapper().apply(objectMapperConfig) }, url)
                 .apply {
                     config {
                         apply(globalHttpConfig)
@@ -89,7 +65,7 @@ class KalibrateDslBuilder<T>(var sessionBuilder: (ArgParser) -> T) {
 
     @KtorExperimentalAPI
     @FlowPreview
-    operator fun invoke(args: Array<out String>) = runBlocking {
+    operator fun invoke(args: Array<out String>) {
         client = HttpClient(CIO) {
             install(JsonFeature) {
                 serializer = JacksonSerializer(block = objectMapperConfig)
@@ -101,7 +77,7 @@ class KalibrateDslBuilder<T>(var sessionBuilder: (ArgParser) -> T) {
                     pipelineMaxSize = 20 // Max number of opened endpoints.
                     keepAliveTime = 5000 // Max number of milliseconds to keep each connection alive.
                     connectTimeout = 5000 // Number of milliseconds to wait trying to connect to the server.
-                    connectRetryAttempts = 5 // Maximum number of attempts for retrying a connection.
+                    connectAttempts = 5 // Maximum number of attempts for retrying a connection.
                 }
             }
         }
@@ -109,13 +85,21 @@ class KalibrateDslBuilder<T>(var sessionBuilder: (ArgParser) -> T) {
         val session = sessionBuilder(ArgParser(args))
         val start = Instant.now()
         val results = scenarioMap[scenarioChooser(session)]?.invoke(session) ?: flowOf()
-        results.toList()
+        runBlocking {
+            results.toList()
                 .also { logger.info { "requests completed: ${it.size}" } }
-                .also { logger.info { "req/sec = ${it.size / Duration.between(
-                    it.map { it.timestamp }.minOrNull() ?: start,
-                    it.map { it.timestamp }.maxOrNull() ?: Instant.now()).seconds}" }
+                .also {
+                    logger.info {
+                        "req/sec = ${
+                            it.size / Duration.between(
+                                it.map { it.timestamp }.minOrNull() ?: start,
+                                it.map { it.timestamp }.maxOrNull() ?: Instant.now()
+                            ).seconds
+                        }"
+                    }
                 }
                 .forEach { logger.debug(it.toString()) }
+        }
     }
 }
 

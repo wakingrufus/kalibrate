@@ -2,11 +2,15 @@ package com.github.wakingrufus.kalibrate.scenario
 
 import com.github.wakingrufus.kalibrate.BigTestDsl
 import com.github.wakingrufus.kalibrate.agent.Result
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.runBlocking
 import mu.KLogging
 import java.time.Duration
 import java.time.Instant
@@ -36,22 +40,18 @@ class Simulation<T> {
 
     fun load(duration: Duration, users: Int) {
         workPattern = {
-            coroutineScope {
-                val setupResults = runSetup(it)
-                val start = Instant.now().plusSeconds(2)
-                val results = (1..users).toList().map { userId ->
-                    async {
-                        (0 until duration.seconds).toList().flatMap { tick ->
+            val setupResults = runSetup(it)
+            val start = Instant.now().plusSeconds(2)
+            flow {
+                (1..users).toList().forEach { userId ->
+                    emit(flow {
+                        (0 until duration.seconds).toList().forEach { tick ->
                             delay(start.plusSeconds(tick).toEpochMilli() - Instant.now().toEpochMilli())
-                            runRepeatable(setupResults.first)
+                            emit(runRepeatable(setupResults.first).asFlow())
                         }
-                    }
-                }.map { it.await() }
-                flow {
-                    emit(setupResults.second.asFlow())
-                    results.forEach { emit(it.asFlow()) }
-                }.flattenConcat()
-            }
+                    }.flattenConcat())
+                }
+            }.flattenConcat()
         }
     }
 
@@ -72,11 +72,11 @@ class Simulation<T> {
         return workPattern(session)
     }
 
-    fun runSetup(session: T): Pair<T, List<Result<*>>> {
+    suspend fun runSetup(session: T): Pair<T, List<Result<*>>> {
         return setup(session)
     }
 
-    fun runRepeatable(session: T): List<Result<*>> {
+    suspend fun runRepeatable(session: T): List<Result<*>> {
         return repeatable(session).second
     }
 }
@@ -89,8 +89,8 @@ class StepContainer<S> {
         steps.add(Step(agent).apply(config))
     }
 
-    operator fun invoke(session: S): Pair<S, List<Result<*>>> = runBlocking {
-        steps.fold(session to emptyList()) { pair, step ->
+   suspend operator fun invoke(session: S): Pair<S, List<Result<*>>> {
+       return steps.fold(session to emptyList()) { pair, step ->
             step.invoke(pair.first).let {
                 it.first to pair.second.plus(it.second)
             }
