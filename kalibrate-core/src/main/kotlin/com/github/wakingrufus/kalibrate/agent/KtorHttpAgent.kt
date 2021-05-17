@@ -1,6 +1,6 @@
 package com.github.wakingrufus.kalibrate.agent
 
-import com.github.wakingrufus.kalibrate.BigTestDsl
+import com.github.wakingrufus.kalibrate.KalibrateDsl
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -13,7 +13,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-@BigTestDsl
+@KalibrateDsl
 class KtorHttpAgent<S, R>(
     val client: () -> HttpClient,
     val url: (S) -> String

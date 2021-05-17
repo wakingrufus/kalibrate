@@ -1,13 +1,13 @@
 package com.github.wakingrufus.kalibrate.scenario
 
-import com.github.wakingrufus.kalibrate.BigTestDsl
+import com.github.wakingrufus.kalibrate.KalibrateDsl
 import com.github.wakingrufus.kalibrate.agent.Result
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import mu.KLogging
 import java.time.Duration
 
-@BigTestDsl
+@KalibrateDsl
 @FlowPreview
 class Simulation<T> {
     companion object : KLogging()
@@ -49,7 +49,7 @@ class Simulation<T> {
     }
 }
 
-@BigTestDsl
+@KalibrateDsl
 class StepContainer<S> {
     val steps: MutableList<Step<S, *>> = mutableListOf()
 

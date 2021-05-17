@@ -1,13 +1,13 @@
 package com.github.wakingrufus.kalibrate.scenario
 
-import com.github.wakingrufus.kalibrate.BigTestDsl
+import com.github.wakingrufus.kalibrate.KalibrateDsl
 import com.github.wakingrufus.kalibrate.agent.Result
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flattenMerge
 import kotlinx.coroutines.flow.flow
 
-@BigTestDsl
+@KalibrateDsl
 @FlowPreview
 class Scenario<T> {
     private val simulations: MutableList<Simulation<T>> = mutableListOf()

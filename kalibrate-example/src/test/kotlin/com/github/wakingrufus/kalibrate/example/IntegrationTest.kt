@@ -1,6 +1,8 @@
 package com.github.wakingrufus.kalibrate.example
 
-import org.junit.Test
+import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Test
+
 
 class IntegrationTest {
 
@@ -10,6 +12,7 @@ class IntegrationTest {
     }
 
     @Test
+    @Disabled
     fun `test run load`() {
         main(arrayOf("--scenario", "load"))
     }

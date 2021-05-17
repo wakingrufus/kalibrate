@@ -18,11 +18,14 @@ import mu.KLogging
 import java.time.Duration
 import java.time.Instant
 
+@KalibrateDsl
 class KalibrateDslBuilder<T>(var sessionBuilder: (ArgParser) -> T) {
     companion object : KLogging()
 
+    @FlowPreview
     val scenarioMap: MutableMap<String, Scenario<T>> = mutableMapOf()
     var globalHttpConfig: HttpAgentDsl<T, *>.() -> Unit = { }
+    @FlowPreview
     var scenarioChooser: (T) -> String = { scenarioMap.keys.first() }
     var objectMapperConfig: ObjectMapper.() -> Unit = {
     }
@@ -37,6 +40,7 @@ class KalibrateDslBuilder<T>(var sessionBuilder: (ArgParser) -> T) {
         this.objectMapperConfig = objectMapperConfig
     }
 
+    @FlowPreview
     fun scenarioChooser(fn: (T) -> String) {
         scenarioChooser = fn
     }
@@ -48,7 +52,7 @@ class KalibrateDslBuilder<T>(var sessionBuilder: (ArgParser) -> T) {
         return KtorHttpAgent<T, R>(client = { client!! }, url = url)
             .apply {
                 config {
-                    apply(globalHttpConfig)
+                    apply(this@KalibrateDslBuilder.globalHttpConfig)
                     apply(config)
                 }
             }
@@ -58,10 +62,11 @@ class KalibrateDslBuilder<T>(var sessionBuilder: (ArgParser) -> T) {
         globalHttpConfig = config
     }
 
+    @FlowPreview
     fun scenario(name: String, setup: Scenario<T>.() -> Unit): Scenario<T> {
         return Scenario<T>()
             .apply(setup)
-            .also { scenarioMap.put(name, it) }
+            .also { scenarioMap[name] = it }
     }
 
     @KtorExperimentalAPI
@@ -116,4 +121,4 @@ fun <T> kalibrate(
 }
 
 @DslMarker
-annotation class BigTestDsl
+annotation class KalibrateDsl

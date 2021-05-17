@@ -1,9 +1,9 @@
 package com.github.wakingrufus.kalibrate.agent
 
-import com.github.wakingrufus.kalibrate.BigTestDsl
+import com.github.wakingrufus.kalibrate.KalibrateDsl
 import mu.KLogging
 
-@BigTestDsl
+@KalibrateDsl
 class HttpAgentDsl<S, R>(val url: (S) -> String) {
     companion object : KLogging()
 

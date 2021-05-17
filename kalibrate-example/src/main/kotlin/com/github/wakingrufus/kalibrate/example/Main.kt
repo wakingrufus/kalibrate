@@ -3,7 +3,8 @@ package com.github.wakingrufus.kalibrate.example
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.github.wakingrufus.kalibrate.kalibrate
-import io.ktor.util.KtorExperimentalAPI
+import com.xenomachina.argparser.default
+import io.ktor.util.*
 import kotlinx.coroutines.FlowPreview
 import mu.KLogging
 import java.time.Duration
@@ -20,11 +21,15 @@ fun main(args: Array<String>) = kalibrate(args, { Session() }) {
     }
     sessionArgs {
         val scenario by it.storing("scenario name")
-        Session(scenario = scenario)
+        val baseUrl: String by it.storing(
+            "-u", "--url",
+            help = "base url to use for requests"
+        ).default("https://httpbin.org/get")
+        Session(scenario = scenario, baseUrl = baseUrl)
     }
     scenarioChooser { it.scenario }
 
-    val get = httpAgent<GetResponse>(url = { "https://httpbin.org/get?test=${it.test}" })
+    val get = httpAgent<GetResponse>(url = { "${it.baseUrl}?test=${it.test}" })
 
     scenario("deploy") {
         simulation {
@@ -62,4 +67,8 @@ fun main(args: Array<String>) = kalibrate(args, { Session() }) {
     }
 }
 
-data class Session(val scenario: String = "deploy", val test: String = "start")
+data class Session(
+    val scenario: String = "deploy",
+    val test: String = "start",
+    val baseUrl: String = ""
+)
