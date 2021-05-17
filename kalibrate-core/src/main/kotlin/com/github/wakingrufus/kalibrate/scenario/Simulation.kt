@@ -1,6 +1,7 @@
 package com.github.wakingrufus.kalibrate.scenario
 
 import com.github.wakingrufus.kalibrate.KalibrateDsl
+import com.github.wakingrufus.kalibrate.agent.KtorHttpAgent
 import com.github.wakingrufus.kalibrate.agent.Result
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
