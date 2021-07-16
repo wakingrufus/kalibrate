@@ -10,6 +10,18 @@ resources:
       cancelPendingRunsOn:
         newCommit: true
         pullRequestUpdate: true
+  - name: kalibrate_snapshot
+    type: GitRepo
+    configuration:
+      gitProvider: github_wakingrufus
+      path: wakingrufus/kalibrate
+      branches:
+        include: master
+      buildOn:
+        commit: true
+      cancelPendingRunsOn:
+        newCommit: true
+        pullRequestUpdate: true
   - name: kalibrate_release
     type: GitRepo
     configuration:
@@ -25,6 +37,14 @@ resources:
 
 pipelines:
   - name: kalibrate_build
+    configuration:
+      runtime:
+        type: image
+        image:
+          auto:
+            language: java
+            versions:
+              - "11"
     steps:
       - name: build
         type: GradleBuild
