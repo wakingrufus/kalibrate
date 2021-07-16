@@ -1,7 +1,8 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
+    id("java-library")
+    id("com.jfrog.artifactory") version "4.24.12"
     kotlin("jvm") version "1.4.32"
+    `maven-publish`
 }
 
 repositories {
@@ -35,12 +36,21 @@ dependencies {
     testImplementation("org.slf4j:slf4j-log4j12:1.7.25")
     testImplementation("org.mock-server:mockserver-netty:5.11.1")
 }
-val compileKotlin: KotlinCompile by tasks
-
-compileKotlin.kotlinOptions {
-    languageVersion = "1.4"
-}
 
 val testTask = tasks.getByName<Test>("test") {
     useJUnitPlatform()
+}
+
+configure<org.jfrog.gradle.plugin.artifactory.dsl.ArtifactoryPluginConvention>() {
+    setContextUrl(System.getenv("int_jfrog_url"))
+    publish {
+        repository {
+            setRepoKey("public")
+            setUsername("int_jfrog_user")
+            setPassword("int_jfrog_apikey")
+        }
+        defaults {
+            publications("mavenJava")
+        }
+    }
 }
