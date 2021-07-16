@@ -109,38 +109,38 @@ pipelines:
           onComplete: #always
             - echo "Cleaning up some stuff"
   - name: kalibrate_release
-      configuration:
-        runtime:
-          type: image
-          image:
-            auto:
-              language: java
-              versions:
-                - "11"
-      steps:
-        - name: build
-          type: GradleBuild
-          configuration:
-            gradleCommand: "artifactoryPublish"
-            useWrapper: true
-            autoPublishBuildInfo: true
-            usesPlugin: true
-            forceXrayScan: true
-            inputResources:
-              - name: kalibrate_release
-            outputResources:
-              - name: kalibrate_build_info
-            integrations:
-              - name: jfrog
-          execution:
-            onStart:
-              - echo "Preparing for work..."
-              - update_commit_status kalibrate_release --message "starting..." --context "$step_name"
-            onSuccess:
-              - echo "Job well done!"
-              - update_commit_status kalibrate_release --message "Succeeded" --context "$step_name"
-            onFailure:
-              - echo "uh oh, something went wrong"
-              - update_commit_status kalibrate_release --message "Failed!" --context "$step_name"
-            onComplete: #always
-              - echo "Cleaning up some stuff"
+    configuration:
+      runtime:
+        type: image
+        image:
+          auto:
+            language: java
+            versions:
+              - "11"
+    steps:
+      - name: build
+        type: GradleBuild
+        configuration:
+          gradleCommand: "artifactoryPublish"
+          useWrapper: true
+          autoPublishBuildInfo: true
+          usesPlugin: true
+          forceXrayScan: true
+          inputResources:
+            - name: kalibrate_release
+          outputResources:
+            - name: kalibrate_build_info
+          integrations:
+            - name: jfrog
+        execution:
+          onStart:
+            - echo "Preparing for work..."
+            - update_commit_status kalibrate_release --message "starting..." --context "$step_name"
+          onSuccess:
+            - echo "Job well done!"
+            - update_commit_status kalibrate_release --message "Succeeded" --context "$step_name"
+          onFailure:
+            - echo "uh oh, something went wrong"
+            - update_commit_status kalibrate_release --message "Failed!" --context "$step_name"
+          onComplete: #always
+            - echo "Cleaning up some stuff"
