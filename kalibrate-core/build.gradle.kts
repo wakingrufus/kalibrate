@@ -1,7 +1,7 @@
 plugins {
     id("java-library")
     id("com.jfrog.artifactory") version "4.24.12"
-    kotlin("jvm") version "1.4.32"
+    kotlin("jvm")
     `maven-publish`
 }
 
