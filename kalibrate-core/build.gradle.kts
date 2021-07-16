@@ -41,13 +41,13 @@ val testTask = tasks.getByName<Test>("test") {
     useJUnitPlatform()
 }
 
-configure<org.jfrog.gradle.plugin.artifactory.dsl.ArtifactoryPluginConvention>() {
+configure<org.jfrog.gradle.plugin.artifactory.dsl.ArtifactoryPluginConvention> {
     setContextUrl(System.getenv("int_jfrog_url"))
     publish {
         repository {
             setRepoKey("public")
-            setUsername("int_jfrog_user")
-            setPassword("int_jfrog_apikey")
+            setUsername(System.getenv("int_jfrog_user"))
+            setPassword(System.getenv("int_jfrog_apikey"))
         }
         defaults {
             publications("mavenJava")
