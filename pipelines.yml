@@ -10,6 +10,14 @@ resources:
       cancelPendingRunsOn:
         newCommit: true
         pullRequestUpdate: true
+  - name: kalibrate_release
+    type: GitRepo
+    configuration:
+      gitProvider: github_wakingrufus
+      path: wakingrufus/kalibrate
+      buildOn:
+        commit: false
+        releaseRequestCreate: true
   - name: kalibrate_build_info
     type: BuildInfo
     configuration:
