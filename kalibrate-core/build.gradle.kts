@@ -41,6 +41,14 @@ val testTask = tasks.getByName<Test>("test") {
     useJUnitPlatform()
 }
 
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava"){
+            from(components["java"])
+        }
+    }
+}
+
 configure<org.jfrog.gradle.plugin.artifactory.dsl.ArtifactoryPluginConvention> {
     setContextUrl(System.getenv("int_jfrog_url"))
     publish {
@@ -48,6 +56,7 @@ configure<org.jfrog.gradle.plugin.artifactory.dsl.ArtifactoryPluginConvention> {
             setRepoKey("public")
             setUsername(System.getenv("int_jfrog_user"))
             setPassword(System.getenv("int_jfrog_apikey"))
+            setMavenCompatible(true)
         }
         defaults {
             publications("mavenJava")
