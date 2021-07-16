@@ -71,5 +71,3 @@ pipelines:
             - update_commit_status kalibrate_pull_request --message "Failed!" --context "$step_name"
           onComplete: #always
             - echo "Cleaning up some stuff"
-          onExecute:
-            - update_commit_status kalibrate_pull_request --message "running..." --context "$step_name"
