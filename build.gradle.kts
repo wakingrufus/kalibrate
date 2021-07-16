@@ -6,7 +6,8 @@ plugins {
 
 allprojects {
     group = "com.github.wakingrufus"
-    version = "0.0.3-SNAPSHOT"
+    version = if (System.getenv("res_kalibrate_release_isGitTag") == "true")
+        System.getenv("res_kalibrate_release_gitTagName") else "0.0.3-SNAPSHOT"
 }
 
 tasks.getByName<Wrapper>("wrapper") {
