@@ -17,7 +17,7 @@ resources:
       path: wakingrufus/kalibrate
       buildOn:
         commit: false
-        releaseRequestCreate: true
+        tagCreate: true
   - name: kalibrate_build_info
     type: BuildInfo
     configuration:
