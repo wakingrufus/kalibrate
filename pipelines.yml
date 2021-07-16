@@ -51,6 +51,7 @@ pipelines:
           gradleCommand: "build"
           useWrapper: true
           autoPublishBuildInfo: true
+          usesPlugin: true
           forceXrayScan: true
           inputResources:
             - name: kalibrate_pull_request
