@@ -1,5 +1,5 @@
 resources:
-  - name: pull_request
+  - name: kalibrate_pull_request
     type: GitRepo
     configuration:
       gitProvider: github_wakingrufus
@@ -10,7 +10,7 @@ resources:
       cancelPendingRunsOn:
         newCommit: true
         pullRequestUpdate: true
-  - name: build_info
+  - name: kalibrate_build_info
     type: BuildInfo
     configuration:
       sourceArtifactory: jfrog
@@ -26,9 +26,9 @@ pipelines:
           autoPublishBuildInfo: true
           forceXrayScan: true
           inputResources:
-            - name: pull_request
+            - name: kalibrate_pull_request
           outputResources:
-            - name: build_info
+            - name: kalibrate_build_info
           integrations:
             - name: jfrog
         execution:
