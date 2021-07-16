@@ -5,6 +5,7 @@ resources:
       gitProvider: github_wakingrufus
       path: wakingrufus/kalibrate
       buildOn:
+        commit: false
         pullRequestCreate: true
       cancelPendingRunsOn:
         newCommit: true
@@ -69,5 +70,41 @@ pipelines:
           onFailure:
             - echo "uh oh, something went wrong"
             - update_commit_status kalibrate_pull_request --message "Failed!" --context "$step_name"
+          onComplete: #always
+            - echo "Cleaning up some stuff"
+  - name: kalibrate_snapshot
+    configuration:
+      runtime:
+        type: image
+        image:
+          auto:
+            language: java
+            versions:
+              - "11"
+    steps:
+      - name: build
+        type: GradleBuild
+        configuration:
+          gradleCommand: "build"
+          useWrapper: true
+          autoPublishBuildInfo: true
+          usesPlugin: true
+          forceXrayScan: true
+          inputResources:
+            - name: kalibrate_snapshot
+          outputResources:
+            - name: kalibrate_build_info
+          integrations:
+            - name: jfrog
+        execution:
+          onStart:
+            - echo "Preparing for work..."
+            - update_commit_status kalibrate_snapshot --message "starting..." --context "$step_name"
+          onSuccess:
+            - echo "Job well done!"
+            - update_commit_status kalibrate_snapshot --message "Succeeded" --context "$step_name"
+          onFailure:
+            - echo "uh oh, something went wrong"
+            - update_commit_status kalibrate_snapshot --message "Failed!" --context "$step_name"
           onComplete: #always
             - echo "Cleaning up some stuff"
