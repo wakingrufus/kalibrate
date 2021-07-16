@@ -5,7 +5,6 @@ resources:
       gitProvider: github_wakingrufus
       path: wakingrufus/kalibrate
       buildOn:
-        commit: true
         pullRequestCreate: true
       cancelPendingRunsOn:
         newCommit: true
