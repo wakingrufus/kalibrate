@@ -62,9 +62,14 @@ pipelines:
         execution:
           onStart:
             - echo "Preparing for work..."
+            - update_commit_status kalibrate_pull_request --message "starting..." --context "$step_name"
           onSuccess:
             - echo "Job well done!"
+            - update_commit_status kalibrate_pull_request --message "Succeeded" --context "$step_name"
           onFailure:
             - echo "uh oh, something went wrong"
+            - update_commit_status kalibrate_pull_request --message "Failed!" --context "$step_name"
           onComplete: #always
             - echo "Cleaning up some stuff"
+          onExecute:
+            - update_commit_status kalibrate_pull_request --message "running..." --context "$step_name"
